@@ -13,6 +13,7 @@ import random
 
 import numpy as np
 import tensorflow as tf
+import keras
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
@@ -54,7 +55,13 @@ class PositionalController:
         ])        
         model.compile(loss='mse', optimizer=Adam(learning_rate=self.lr))
         return model
-        
+    
+    
+    def load_model(self, name):
+        self.model = keras.saving.load_model('trained_controllers/' + name)
+        self.target_model = keras.saving.load_model('trained_controllers/' + name)
+
+
     def get_features(self, state):
         player_info = [
             state.player_entity.entity.height/game_static.MAX_ENTITY_SIZE,
@@ -70,29 +77,34 @@ class PositionalController:
         goal_info = [
             state.goal_entity.x/game_static.GAME_WIDTH,
             state.goal_entity.y/game_static.GAME_HEIGHT,
-            state.goal_entity.height/game_static.MAX_ENTITY_SIZE,
-            state.goal_entity.width/game_static.MAX_ENTITY_SIZE,
+            # state.goal_entity.height/game_static.MAX_ENTITY_SIZE,
+            # state.goal_entity.width/game_static.MAX_ENTITY_SIZE,
             # distance to goal
             (
                 np.sqrt(
                     (state.player_entity.entity.x - state.goal_entity.x)**2 
                     + (state.player_entity.entity.y - state.goal_entity.y)**2
                 ) / game_static.GAME_DIAGONAL
-            )
+            ),
+            state.player_entity.entity.x - state.goal_entity.x/game_static.GAME_WIDTH, #distance in x
+            state.player_entity.entity.y - state.goal_entity.y/game_static.GAME_WIDTH #distance in y
+            
         ]
         enemy_info = [
             [
                 enemy_entity.entity.x/game_static.GAME_WIDTH,
                 enemy_entity.entity.y/game_static.GAME_HEIGHT,
-                enemy_entity.entity.height/game_static.MAX_ENTITY_SIZE,
-                enemy_entity.entity.width/game_static.MAX_ENTITY_SIZE,
+                # enemy_entity.entity.height/game_static.MAX_ENTITY_SIZE,
+                # enemy_entity.entity.width/game_static.MAX_ENTITY_SIZE,
                 enemy_entity.velocity.x,
                 enemy_entity.velocity.y,
                 # distance from the player to the enemy
                 np.sqrt(
                         (state.player_entity.entity.x - enemy_entity.entity.x)**2 
                         + (state.player_entity.entity.y - enemy_entity.entity.y)**2
-                ) / game_static.GAME_DIAGONAL
+                ) / game_static.GAME_DIAGONAL,
+                state.player_entity.entity.x - state.enemy_entity.entity.x/game_static.GAME_WIDTH, #distance in x
+                state.player_entity.entity.y - state.enemy_entity.entity.y/game_static.GAME_WIDTH #distance in y
             ]
             for enemy_entity in state.enemy_collection
         ]

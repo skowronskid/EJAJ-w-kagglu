@@ -5,17 +5,18 @@ import copy
 
 
 class AbstractGame:
-    def __init__(self, controller) -> None:
+    def __init__(self, controller, training=False) -> None:
         self.__innerState = game_state.GameState()
         self.controller = controller
         self.done = False
         self.ticks = 0
 
         # Initialize Pygame
-        pygame.init()
-        self.graphics = pygame.display.set_mode((game_static.GAME_WIDTH, game_static.GAME_HEIGHT))
-        pygame.display.set_caption("Advanced AI Game")
-        self.clock = pygame.time.Clock()
+        if not training:
+            pygame.init()
+            self.graphics = pygame.display.set_mode((game_static.GAME_WIDTH, game_static.GAME_HEIGHT))
+            pygame.display.set_caption("Advanced AI Game")
+            self.clock = pygame.time.Clock()
 
     def get_current_state(self) -> game_state.GameState:
         return copy.deepcopy(self.__innerState)
@@ -77,6 +78,24 @@ def main():
         my_game = AbstractGame(KeyboardController())
     elif choice.strip() == "2":
         from utils.PositionalController import PositionalController
+        NUMBER_OF_STATES = (
+            game_static.ENEMY_COUNT * 6 # each enemy has 6 features: x,y position and velocity, as well as height and width
+            + game_static.ENEMY_COUNT # distance from the player to the enemy
+            + 8 # player has 8 features: x,y position and velocity, height and width, friction, acceleration factor
+            + 4 # goal has 4 features: x,y position, height and width
+            + 1 # distance to goal
+            
+        )
+        NUMBER_OF_ACTIONS = 9
+        controller = PositionalController(
+            model_name="gaming",
+            lr = 1,
+            discount=1,
+            number_of_actions=NUMBER_OF_ACTIONS,
+            number_of_states=NUMBER_OF_STATES
+        )
+        controller.load_model("PC2___-58.75max_-126.58avg_-172.29min__1732547617.model")
+        my_game = AbstractGame(controller)
         # load best the model
         
         
